@@ -20,3 +20,11 @@ class Job(Base, BaseModel):
     estimate_time = Column(String)
     end_date = Column(DateTime)
     created_at = Column(DateTime)
+
+    @staticmethod
+    def filter_fields():
+        return ["name", "categor_id", "price", "type", "status", "estimate_time", "created_at"]
+    
+    @staticmethod
+    def order_by_fields():
+        return ["name", "price", "type", "status", "estimate_time", "created_at"]

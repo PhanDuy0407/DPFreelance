@@ -3,11 +3,16 @@ ADMIN_ROLE = "Admin"
 RECRUITER_ROLE = "Recruiter"
 APPLICANT_ROLE = "Applicant"
 
-class JobStatus(Enum):
+class JobStatus:
     WAITING_FOR_APPROVE = "WAITING_FOR_APPROVE"
     OPEN = "OPEN"
     DENY = "DENY"
     REOPEN = "REOPEN"
     WORK_IN_PROGRESS = "WORK_IN_PROGRESS"
+
+class JobPricingStatus:
+    WAITING_FOR_APPROVE = "WAITING_FOR_APPROVE"
+    DENY = "DENY"
+    ACCEPTED = "ACCEPTED"
 
     

@@ -6,10 +6,6 @@ from persistent.ApplicantPersistent import ApplicantPersistent
 from persistent.JobPersistent import JobPersistent
 from models.dto.output.ApplicantDTO import ApplicantDTO as OutputApplicant
 from models.dto.input.Applicant import Applicant as InputApplicant
-from models.dto.output.JobDTO import JobDTO
-from models.dto.output.CategoryDTO import CategoryDTO
-from models.dto.output.RecruiterDTO import RecruiterDTO
-from models.dto.output.JobApplyDTO import JobApplyDTO
 from models.dto.output.UserInformation import UserInformation
 from models.data.Applicant import Applicant
 from controller.model.ResponseModel import ListResponseModel, ResponseModel
@@ -51,36 +47,6 @@ class ApplicantController:
             detail="Success",
         ).model_dump(), HTTPStatus.OK
     
-    def get_job_applied(self):
-        applicant = self.persistent.get_applicant_by_account_id(self.user.id)
-        if not applicant:
-            return ResponseModel(
-                detail="Applicant not found"
-            ), HTTPStatus.NOT_FOUND
-
-        jobs_applied = self.job_persistent.get_job_applied_by_applicant_id(applicant.id)
-        result = [
-            JobApplyDTO(
-                **job_applied.to_dict(),
-                job = JobDTO(
-                    **job.to_dict(), 
-                    category=CategoryDTO(**category.to_dict()),
-                    poster=RecruiterDTO(
-                        **poster.to_dict(),
-                        information=UserInformation(
-                            **poster_account.to_dict(),
-                        )
-                    )
-                )
-            ).model_dump()
-            for job_applied, job, category, poster, poster_account  in jobs_applied
-        ]
-        return ListResponseModel(
-            detail="Success",
-            data = result,
-            total=len(result),
-        ), HTTPStatus.OK
-    
     def register(self, applicant_info: InputApplicant):
         if self.user.applicant:
             return ResponseModel(
@@ -104,4 +70,3 @@ class ApplicantController:
             data=applicant.to_dict(),
             detail="Success"
         ), HTTPStatus.CREATED
-        

@@ -1,5 +1,6 @@
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime
 from models.data.BaseModel import BaseModel
+from datetime import datetime
 
 from common.database_connection import Base
 
@@ -13,4 +14,4 @@ class JobApply(Base, BaseModel):
     experience_description = Column(String)
     plan_description = Column(String)
     status = Column(String)
-    created_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.now)

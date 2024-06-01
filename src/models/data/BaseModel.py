@@ -8,3 +8,7 @@ class BaseModel:
     def to_dict(self):
         """Converts the model instance to a dictionary."""
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+    
+    @staticmethod
+    def filter_fields(self):
+        return []
