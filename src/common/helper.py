@@ -73,8 +73,8 @@ def get_filters(params, Model):
     
     # Dynamically add filters based on query parameters
     for key, value in params.items():
-        if ':' in key:
-            field_name, op = key.split(':')
+        if '__' in key:
+            field_name, op = key.split('__')
             if field_name in Model.filter_fields() and op in operators:
                 column = getattr(Model, field_name)
                 if op == 'eq':

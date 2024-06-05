@@ -2,10 +2,9 @@ from uuid import uuid4
 from models.data.Applicant import Applicant
 from models.data.Account import Account
 from sqlalchemy.orm.session import Session
+from persistent.BasePersistent import BasePersistent
 
-class ApplicantPersistent:
-    def __init__(self, session):
-        self.session: Session = session
+class ApplicantPersistent(BasePersistent):
     
     def get_all_applicants(self):
         return self.session.query(

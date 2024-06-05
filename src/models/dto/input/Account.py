@@ -6,6 +6,6 @@ class Account(BaseModel):
     password: str
 
 class RegisterAccount(Account):
-    fname : str
-    lname : str
-    email: Optional[str] = None
+    fname : Optional[str]
+    lname : Optional[str]
+    email: str

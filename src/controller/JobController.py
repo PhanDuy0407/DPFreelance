@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from persistent.JobPersistent import JobPersistent
 from persistent.RecruiterPersistent import RecruiterPersistent
 from models.dto.output.JobDTO import JobDTO as OutputJob
-from models.dto.output.JobApplyDTO import JobApplyDTO, RecruiterJobPricing, ApplicantJobPricing
+from models.dto.output.JobApplyDTO import RecruiterJobPricing, ApplicantJobPricing
 from models.dto.input.Job import Job as InputJob
 from models.dto.input.JobApply import JobApply, JobApplyStatus
 from models.dto.output.RecruiterDTO import RecruiterDTO
@@ -80,10 +80,12 @@ class JobController:
             poster_id=self.user.recruiter.id,
             description=job.description,
             jd_file=job.jd_file,
-            price=job.price,
+            min_price=job.min_price,
+            max_price=job.max_price,
             price_unit=job.price_unit,
+            require_skills=job.require_skills,
             type=job.type,
-            status="OPEN",
+            status=JobStatus.WAITING_FOR_APPROVE,
             estimate_time=job.estimate_time,
             end_date=job.end_date,
             created_at=datetime.now(),
@@ -151,6 +153,24 @@ class JobController:
             detail="Success"
         ), HTTPStatus.CREATED
     
+    def revoke_job_apply(self, job_id):
+        exist_pricing = self.persistent.get_job_apply_by_job_id_and_applicant_id(job_id, self.user.applicant.id)
+        if not exist_pricing:
+            return ResponseModel(
+                detail="Job pricing not found"
+            ), HTTPStatus.NOT_FOUND
+        job_apply, job, _ = exist_pricing
+        if not job_apply.status == JobPricingStatus.ACCEPTED:
+            return ResponseModel(
+                detail=f"Cannot revoke job pricing with status {job_apply.status}"
+            ), HTTPStatus.CONFLICT
+        job_apply.status = JobPricingStatus.REVOKE
+        job.status = JobStatus.OPEN
+        self.persistent.commit_change()
+        return ResponseModel(
+            detail="Success"
+        ), HTTPStatus.OK
+    
     def get_all_recruiter_jobs_posted(self):
         job_detail = self.persistent.get_all_jobs_by_recruiter_id(self.user.recruiter.id)
         result = [
@@ -171,10 +191,14 @@ class JobController:
         job_result, status = self.get_job_by_id(job_id)
         if status != HTTPStatus.OK:
             return job_result, status
+        poster_id = job_result.get("data", {}).get("poster", {}).get("id")
+        if poster_id != self.user.recruiter.id:
+            return ResponseModel(
+                detail="Resource forbidden"
+            ), HTTPStatus.FORBIDDEN
         jobs_pricing = self.persistent.get_jobs_apply_by_job_id(job_id)
         result = [
             RecruiterJobPricing(
-                job = OutputJob(**job_result["data"]),
                 applicant=ApplicantDTO(
                     **applicant.to_dict(),
                     information=UserInformation(**account.to_dict())
@@ -212,28 +236,20 @@ class JobController:
         if job_apply_status.status == JobPricingStatus.ACCEPTED:
             if job.status not in [JobStatus.OPEN, JobStatus.REOPEN]:
                 return ResponseModel(
-                    detail="Job in progress cannot change status"
+                    detail=f"Cannot accept pricing with job status {job.status}"
                 ), HTTPStatus.BAD_REQUEST
-            for job_applied_detail in self.persistent.get_jobs_apply_by_job_id(job_id):
-                job_applied = job_applied_detail[0]
-                if job_applied.status == JobPricingStatus.ACCEPTED:
-                    return ResponseModel(
-                        detail="Another pricing have been applied"
-                    ), HTTPStatus.CONFLICT
         elif job_apply.status == JobPricingStatus.ACCEPTED:
             return ResponseModel(
                 detail="Cannot change status from ACCEPTED to DENY"
             ), HTTPStatus.BAD_REQUEST
         
         job_apply.status = job_apply_status.status
-        self.persistent.add_job_apply(job_apply)
         if job_apply_status.status == JobPricingStatus.ACCEPTED:
             self.persistent.deny_all_waiting_job_apply(job_id)
             job.status = JobStatus.WORK_IN_PROGRESS
-            self.persistent.add_job(job)
+        self.persistent.commit_change()
 
         return ResponseModel(
             data=job_apply.to_dict(),
             detail="Success"
         ).model_dump(), HTTPStatus.OK
-        

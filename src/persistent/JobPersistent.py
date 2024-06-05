@@ -9,10 +9,9 @@ from sqlalchemy.orm.session import Session
 from sqlalchemy import and_
 from common.helper import get_filters, parse_order_by
 from common.constant import JobStatus, JobPricingStatus
+from persistent.BasePersistent import BasePersistent
 
-class JobPersistent:
-    def __init__(self, session):
-        self.session: Session = session
+class JobPersistent(BasePersistent):
     
     def get_all_jobs(self, params):
         query = self.session.query(

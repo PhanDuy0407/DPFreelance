@@ -31,6 +31,13 @@ async def apply_job(job_id: UUID, job_apply: JobApply, response_model: Response,
     response_model.status_code = status_code
     return result
 
+@router.put("/jobs/{job_id}/revoke")
+async def revoke_apply_job(job_id: UUID, response_model: Response, user = Depends(get_current_user()), session = Depends(get_db)):
+    controller = JobController(user, session)
+    result, status_code = controller.revoke_job_apply(str(job_id))
+    response_model.status_code = status_code
+    return result
+
 @router.get("/{applicant_id}")
 async def detail(applicant_id: UUID, response_model: Response, user = Depends(get_current_user()), session = Depends(get_db)):
     controller = ApplicantController(user, session)

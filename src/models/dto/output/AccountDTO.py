@@ -8,9 +8,9 @@ class Account(BaseModel):
     id : str
     username : str
     email : str
-    fname : str
-    lname : str
-    avatar : str
+    fname : Optional[str]
+    lname : Optional[str]
+    avatar : Optional[str]
     enable : bool
     applicant: Optional[ApplicantDTO]
     recruiter: Optional[RecruiterInfoDTO]

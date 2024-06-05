@@ -8,8 +8,8 @@ from models.dto.input.Job import Job
 router = APIRouter(prefix="/api/v1/jobs", tags=["job"])
 
 @router.get("")
-async def list(request: Request, response_model: Response, user = Depends(get_current_user()), session = Depends(get_db)):
-    controller = JobController(user, session)
+async def list(request: Request, response_model: Response, session = Depends(get_db)):
+    controller = JobController(None, session)
     params = request.query_params
     result, status_code = controller.get_all_jobs(params)
     response_model.status_code = status_code

@@ -9,10 +9,14 @@ class JobStatus:
     DENY = "DENY"
     REOPEN = "REOPEN"
     WORK_IN_PROGRESS = "WORK_IN_PROGRESS"
+    CLOSED = "CLOSED"
+    DONE = "DONE"
 
 class JobPricingStatus:
     WAITING_FOR_APPROVE = "WAITING_FOR_APPROVE"
     DENY = "DENY"
     ACCEPTED = "ACCEPTED"
+    REVOKE = "REVOKE"
+    DONE = "DONE"
 
     

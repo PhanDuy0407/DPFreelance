@@ -10,9 +10,11 @@ class JobDTO(BaseModel):
     category: CategoryDTO
     poster: RecruiterDTO
     description: str
-    jd_file: str
-    price: int
+    jd_file: Optional[str]
+    min_price: int
+    max_price: int
     price_unit: str
+    require_skills: Optional[list] = []
     type: str
     status: str
     estimate_time: str

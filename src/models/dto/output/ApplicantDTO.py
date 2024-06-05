@@ -10,5 +10,6 @@ class ApplicantDTO(BaseModel):
     skills: Optional[dict] = {}
     phone: str = ""
     cv_link: Optional[str] = None
+    work_time: int
     created_at: datetime
     updated_at: datetime

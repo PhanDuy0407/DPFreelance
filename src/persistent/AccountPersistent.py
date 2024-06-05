@@ -2,10 +2,9 @@ from uuid import uuid4
 from models.data.Account import Account
 from sqlalchemy.orm.session import Session
 from sqlalchemy import or_
+from persistent.BasePersistent import BasePersistent
 
-class AccountPersistent:
-    def __init__(self, session):
-        self.session: Session = session
+class AccountPersistent(BasePersistent):
     
     def get_account_by_id(self, account_id):
         return self.session.query(Account).filter(

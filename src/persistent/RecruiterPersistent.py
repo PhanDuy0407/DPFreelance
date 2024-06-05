@@ -2,10 +2,9 @@ from uuid import uuid4
 from models.data.Recruiter import Recruiter
 from models.data.Account import Account
 from sqlalchemy.orm.session import Session
+from persistent.BasePersistent import BasePersistent
 
-class RecruiterPersistent:
-    def __init__(self, session):
-        self.session: Session = session
+class RecruiterPersistent(BasePersistent):
     
     def get_all_recruiters(self):
         return self.session.query(Recruiter, Account).filter(
