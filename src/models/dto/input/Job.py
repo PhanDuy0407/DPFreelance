@@ -12,5 +12,4 @@ class Job(BaseModel):
     price_unit: str
     require_skills: Optional[list] = []
     type: str
-    estimate_time: str
     end_date: datetime

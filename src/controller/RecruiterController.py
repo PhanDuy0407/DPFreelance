@@ -61,7 +61,8 @@ class RecruiterController:
         recruiter = Recruiter(
             id = uuid4(),
             account_id = self.user.id,
-            recruiter_email = recruiter_info.recruiter_email,
+            city = recruiter_info.city,
+            address = recruiter_info.address,
             phone = recruiter_info.phone,
             free_post_attempt = 1,
             remain_post_attempt = 0,

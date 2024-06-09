@@ -1,5 +1,7 @@
+from typing import Optional
 from pydantic import BaseModel
 
 class Recruiter(BaseModel):
-    recruiter_email: str
+    city: Optional[str] = None
+    address: Optional[str] = None
     phone: str

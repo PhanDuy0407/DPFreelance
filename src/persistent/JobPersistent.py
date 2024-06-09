@@ -22,7 +22,7 @@ class JobPersistent(BasePersistent):
         ).filter(
             Category.id == Job.category_id,
             Recruiter.id == Job.poster_id,
-            Account.id == Recruiter.account_id
+            Account.id == Recruiter.account_id,
         )
         filters = get_filters(params, Job)
         if filters:
@@ -34,7 +34,7 @@ class JobPersistent(BasePersistent):
                 query = query.order_by(column.asc())
             else:
                 query = query.order_by(column.desc())
-        return query.all()
+        return query.limit(params.get("limit")).offset(params.get("offset")).all()
     
     def get_job_by_id(self, job_id):
         return self.session.query(
@@ -107,3 +107,11 @@ class JobPersistent(BasePersistent):
             JobApply.job_id == job_id,
             JobApply.status == JobPricingStatus.WAITING_FOR_APPROVE,
         ).update({"status": JobStatus.DENY})
+
+    def get_job_applied_success_by_job_id(self, job_id):
+        return self.session.query(JobApply, Applicant, Account).filter(
+            JobApply.job_id == job_id,
+            JobApply.status == JobPricingStatus.ACCEPTED,
+            Applicant.id == JobApply.applicant_id,
+            Account.id == Applicant.account_id,
+        ).first()

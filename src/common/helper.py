@@ -78,7 +78,8 @@ def get_filters(params, Model):
             if field_name in Model.filter_fields() and op in operators:
                 column = getattr(Model, field_name)
                 if op == 'eq':
-                    filters.append(column == value)
+                    filter_list = value.split(",")
+                    filters.append(column.in_(filter_list))
                 elif op == 'gt':
                     filters.append(column > value)
                 elif op == 'lt':

@@ -19,14 +19,13 @@ class Job(Base, BaseModel):
     require_skills = Column(JSON)
     type = Column(String)
     status = Column(String)
-    estimate_time = Column(String)
     end_date = Column(DateTime)
     created_at = Column(DateTime)
 
     @staticmethod
     def filter_fields():
-        return ["name", "category_id", "min_price", "max_price", "type", "status", "estimate_time", "created_at"]
+        return ["name", "category_id", "min_price", "max_price", "type", "status", "created_at"]
     
     @staticmethod
     def order_by_fields():
-        return ["name", "min_price", "max_price", "type", "status", "estimate_time", "created_at"]
+        return ["name", "min_price", "max_price", "type", "status", "created_at"]

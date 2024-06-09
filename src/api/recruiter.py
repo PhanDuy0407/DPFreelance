@@ -25,7 +25,7 @@ async def register(recruiter_info: Recruiter, response_model: Response, user = D
     return result
 
 @router.get("/jobs")
-async def get_all_job_pricing(response_model: Response, user = Depends(get_current_user([RECRUITER_ROLE])), session = Depends(get_db)):
+async def get_all_jobs_posted(response_model: Response, user = Depends(get_current_user([RECRUITER_ROLE])), session = Depends(get_db)):
     controller = JobController(user, session)
     result, status_code = controller.get_all_recruiter_jobs_posted()
     response_model.status_code = status_code

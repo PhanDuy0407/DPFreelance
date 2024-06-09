@@ -3,7 +3,9 @@ from pydantic import BaseModel
 
 class Applicant(BaseModel):
     bio: Optional[str] = None
-    skills: Optional[dict] = {}
+    city: Optional[str] = None
+    address: Optional[str] = None
+    skills: Optional[list] = []
     cv_link: Optional[str] = None
     work_time: int
     phone: str

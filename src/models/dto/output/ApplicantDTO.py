@@ -7,8 +7,10 @@ class ApplicantDTO(BaseModel):
     id: str
     information: Optional[UserInformation] = None
     bio: Optional[str] = None
-    skills: Optional[dict] = {}
+    skills: Optional[list] = []
     phone: str = ""
+    city: Optional[str] = None
+    address: Optional[str] = None
     cv_link: Optional[str] = None
     work_time: int
     created_at: datetime

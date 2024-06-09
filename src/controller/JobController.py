@@ -4,8 +4,9 @@ from datetime import datetime, timedelta
 
 from persistent.JobPersistent import JobPersistent
 from persistent.RecruiterPersistent import RecruiterPersistent
-from models.dto.output.JobDTO import JobDTO as OutputJob
-from models.dto.output.JobApplyDTO import RecruiterJobPricing, ApplicantJobPricing
+from models.dto.output.JobDTO import RecruiterJobDTO, JobDTO as OutputJob
+from models.dto.output.RecruiterJobPricing import RecruiterJobPricing
+from models.dto.output.ApplicantJobPricing import ApplicantJobPricing
 from models.dto.input.Job import Job as InputJob
 from models.dto.input.JobApply import JobApply, JobApplyStatus
 from models.dto.output.RecruiterDTO import RecruiterDTO
@@ -86,7 +87,6 @@ class JobController:
             require_skills=job.require_skills,
             type=job.type,
             status=JobStatus.WAITING_FOR_APPROVE,
-            estimate_time=job.estimate_time,
             end_date=job.end_date,
             created_at=datetime.now(),
         )
@@ -173,14 +173,27 @@ class JobController:
     
     def get_all_recruiter_jobs_posted(self):
         job_detail = self.persistent.get_all_jobs_by_recruiter_id(self.user.recruiter.id)
-        result = [
-            OutputJob(
-                **job.to_dict(), 
-                category=CategoryDTO(**category.to_dict()),
-                poster=self.user.recruiter
-            ) 
-            for job, category  in job_detail
-        ]
+        result = []
+        for job, category in job_detail:
+            job_applied=self.persistent.get_job_applied_success_by_job_id(job.id)
+            if job_applied:
+                job_apply, applicant, account = job_applied
+                job_applied = RecruiterJobPricing(
+                    applicant=ApplicantDTO(
+                        **applicant.to_dict(),
+                        information=UserInformation(**account.to_dict())
+                    ),
+                    **job_apply.to_dict()
+                )
+            result.append(
+                RecruiterJobDTO(
+                    **job.to_dict(), 
+                    category=CategoryDTO(**category.to_dict()),
+                    poster=self.user.recruiter,
+                    job_applied=job_applied,
+                    number_of_pricing=len(self.persistent.get_jobs_apply_by_job_id(job.id))
+                )
+            )
         return ListResponseModel(
             data=result,
             detail="Success",
@@ -245,6 +258,7 @@ class JobController:
         
         job_apply.status = job_apply_status.status
         if job_apply_status.status == JobPricingStatus.ACCEPTED:
+            job_apply.applied_at = datetime.now()
             self.persistent.deny_all_waiting_job_apply(job_id)
             job.status = JobStatus.WORK_IN_PROGRESS
         self.persistent.commit_change()

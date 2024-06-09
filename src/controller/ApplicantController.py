@@ -57,6 +57,8 @@ class ApplicantController:
             id = uuid4(),
             account_id = self.user.id,
             bio = applicant_info.bio,
+            city = applicant_info.city,
+            address = applicant_info.address,
             skills = applicant_info.skills,
             phone = applicant_info.phone,
             work_time = applicant_info.work_time,

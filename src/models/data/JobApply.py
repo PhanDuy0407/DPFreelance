@@ -15,3 +15,4 @@ class JobApply(Base, BaseModel):
     plan_description = Column(String)
     status = Column(String)
     created_at = Column(DateTime, default=datetime.now)
+    applied_at = Column(DateTime)

@@ -5,8 +5,9 @@ from models.dto.output.UserInformation import UserInformation
 
 class RecruiterDTO(BaseModel):
     id: str
-    recruiter_email: str
     phone: str
+    city: Optional[str] = None
+    address: Optional[str] = None
     information: Optional[UserInformation] = None
 
 class RecruiterInfoDTO(RecruiterDTO):

@@ -46,7 +46,9 @@ class AuthenticationController:
         account_db = self.persistent.create_account(
             username=account.username,
             password=pwd_context.hash(account.password),
-            email=account.email
+            email=account.email,
+            fname=account.fname,
+            lname=account.lname,
         )
         access_token = self.__create_access_token(
             data={"sub": account_db.username}, expires_delta=timedelta(seconds=config.getint("access_token_expire_time"))

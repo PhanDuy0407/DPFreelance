@@ -14,6 +14,8 @@ class Applicant(Base, BaseModel):
     phone = Column(String, unique=True)
     work_time = Column(Integer)
     cv_link = Column(String)
+    city = Column(String)
+    address = Column(String)
     saved_jobs = Column(JSON, default="[]")
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
