@@ -62,7 +62,7 @@ class JobPersistent(BasePersistent):
             Category.id == Job.category_id,
             Recruiter.id == Job.poster_id,
             Account.id == Recruiter.account_id
-        ).all()
+        ).order_by(JobApply.created_at.desc()).all()
     
     def add_job(self, job):
         self.session.add(job)
@@ -100,13 +100,16 @@ class JobPersistent(BasePersistent):
         ).filter(
             Category.id == Job.category_id,
             Job.poster_id == recruiter_id
-        ).all()
+        ).order_by(Job.created_at.desc()).all()
     
     def deny_all_waiting_job_apply(self, job_id):
-        self.session.query(JobApply).filter(
+        query = self.session.query(JobApply).filter(
             JobApply.job_id == job_id,
             JobApply.status == JobPricingStatus.WAITING_FOR_APPROVE,
-        ).update({"status": JobStatus.DENY})
+        )
+        list_job_deny = query.all()
+        query.update({"status": JobStatus.DENY})
+        return list_job_deny
 
     def get_job_applied_success_by_job_id(self, job_id):
         return self.session.query(JobApply, Applicant, Account).filter(
@@ -115,3 +118,7 @@ class JobPersistent(BasePersistent):
             Applicant.id == JobApply.applicant_id,
             Account.id == Applicant.account_id,
         ).first()
+    
+    def delete_job(self, job):
+        self.session.delete(job)
+        self.commit_change()

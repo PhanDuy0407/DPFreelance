@@ -14,6 +14,13 @@ async def login(account: Account, response_model: Response, session = Depends(ge
     response_model.status_code = status_code
     return result
 
+@router.post("/admin/login")
+async def login(account: Account, response_model: Response, session = Depends(get_db)):
+    controller = AuthenticationController(session)
+    result, status_code = controller.login_admin(account)
+    response_model.status_code = status_code
+    return result
+
 @router.post("/register")
 async def register(account: RegisterAccount, response_model: Response, session = Depends(get_db)):
     controller = AuthenticationController(session)

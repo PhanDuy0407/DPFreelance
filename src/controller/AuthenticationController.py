@@ -23,10 +23,40 @@ class AuthenticationController:
             return ResponseModel(
                 detail=f"User not found with username {account.username}",
             ).model_dump(), HTTPStatus.NOT_FOUND
+        
+        if not user.enable:
+            return ResponseModel(
+                detail=f"User disabled",
+            ).model_dump(), HTTPStatus.UNAUTHORIZED
 
         if not self.__verify_password(account.password, user.password):
             return ResponseModel(
                 detail="Invalid credentials",
+            ).model_dump(), HTTPStatus.UNAUTHORIZED
+
+        access_token = self.__create_access_token(
+            data={"sub": user.username}, expires_delta=timedelta(seconds=config.getint("access_token_expire_time"))
+        )
+        return ResponseModel(
+            data={"access_token": access_token},
+            detail="Success",
+        ).model_dump(), HTTPStatus.OK
+    
+    def login_admin(self, account: LoginAccount) -> ResponseModel:
+        user: Account = self.persistent.get_account_by_username(account.username)
+        if not user:
+            return ResponseModel(
+                detail=f"User not found with username {account.username}",
+            ).model_dump(), HTTPStatus.NOT_FOUND
+
+        if not self.__verify_password(account.password, user.password):
+            return ResponseModel(
+                detail="Invalid credentials",
+            ).model_dump(), HTTPStatus.UNAUTHORIZED
+        
+        if not user.is_admin:
+            return ResponseModel(
+                detail="FORBIDDEN",
             ).model_dump(), HTTPStatus.UNAUTHORIZED
 
         access_token = self.__create_access_token(

@@ -1,6 +1,7 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 import jwt
+from datetime import datetime
 from config import CONF
 from persistent.AccountPersistent import AccountPersistent
 from persistent.RecruiterPersistent import RecruiterPersistent
@@ -61,6 +62,38 @@ def get_current_user(role = ["*"]):
 
     return role_checker
 
+def get_user_ws(token, session):
+        auth_config = CONF["Auth"]
+        persistent = AccountPersistent(session)
+        recruiter_persistent = RecruiterPersistent(session)
+        applicant_persistent = ApplicantPersistent(session)
+        credentials_exception = HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+        )
+        try:
+            payload = jwt.decode(token, auth_config.get("secret_key"), algorithms=[auth_config.get("algorithm")])
+            username: str = payload.get("sub")
+            if username is None:
+                raise credentials_exception
+        except jwt.ExpiredSignatureError:
+            raise credentials_exception
+        except jwt.DecodeError:
+            raise credentials_exception
+        user = persistent.get_account_by_username(username)
+        if user is None:
+            raise credentials_exception
+
+        applicant = applicant_persistent.get_applicant_by_account_id(user.id)
+        recruiter = recruiter_persistent.get_recruiter_by_account_id(user.id)
+        user_dict = user.to_dict()
+        user = Account(
+            **user_dict,
+            applicant=ApplicantDTO(**applicant.to_dict(), information=UserInformation(**user_dict)) if applicant else None,
+            recruiter=RecruiterInfoDTO(**recruiter.to_dict(), information=UserInformation(**user_dict)) if recruiter else None
+        )
+        return user
+
 def get_filters(params, Model):
     filters = []
     operators = {
@@ -105,3 +138,8 @@ def parse_order_by(params, Model):
             else:
                 raise HTTPException(status_code=400, detail=f"Invalid order key: {key}")
     return order_criteria
+
+def custom_encoder(obj):
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    raise TypeError("Object of type '%s' is not JSON serializable" % type(obj))

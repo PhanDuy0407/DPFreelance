@@ -1,5 +1,7 @@
 from uuid import uuid4
 from models.data.Account import Account
+from models.data.Applicant import Applicant
+from models.data.Recruiter import Recruiter
 from sqlalchemy.orm.session import Session
 from sqlalchemy import or_
 from persistent.BasePersistent import BasePersistent
@@ -33,3 +35,16 @@ class AccountPersistent(BasePersistent):
         self.session.add(account)
         self.session.commit()
         return account
+    
+    def get_all_account(self):
+        return self.session.query(Account, Applicant, Recruiter).outerjoin(
+            Applicant, Account.id == Applicant.account_id
+        ).outerjoin(
+            Recruiter, Account.id == Recruiter.account_id,
+        ).order_by(Account.created_at.desc()).all()
+    
+    def toggle_account(self, account_id, enable):
+        self.session.query(Account).filter(
+            Account.id == account_id
+        ).update({"enable": enable}, synchronize_session=False)
+        self.commit_change()

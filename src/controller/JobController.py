@@ -18,12 +18,14 @@ from models.data.Job import Job
 from models.data.JobApply import JobApply as JobApplyData
 from controller.model.ResponseModel import ListResponseModel, ResponseModel
 from common.constant import JobPricingStatus, JobStatus
+from controller.NotificationController import NotificationController
 
 class JobController:
     def __init__(self, user: Account, session) -> None:
         self.user = user
         self.persistent = JobPersistent(session)
         self.recruiter_persistent = RecruiterPersistent(session)
+        self.notification = NotificationController(user, session)
 
     def get_all_jobs(self, params = {}):
         job_detail = self.persistent.get_all_jobs(params)
@@ -148,6 +150,13 @@ class JobController:
             status=JobPricingStatus.WAITING_FOR_APPROVE,
         )
         self.persistent.add_job_apply(job_apply_data)
+        job_name = job["data"]["name"]
+        self.notification.send_notification_to_recruiter(
+            recruiter_id=job.get("data", {}).get("poster", {}).get("id"),
+            content=f"<strong>{self.user.fname} {self.user.lname}</strong> đã ứng tuyển công việc <strong>{job_name}</strong> của bạn",
+            nav_link=f"recruiters/jobs/{job_id}",
+            avatar=self.user.avatar,
+        )
         return ResponseModel(
             data=job_apply_data.to_dict(),
             detail="Success"
@@ -259,8 +268,27 @@ class JobController:
         job_apply.status = job_apply_status.status
         if job_apply_status.status == JobPricingStatus.ACCEPTED:
             job_apply.applied_at = datetime.now()
-            self.persistent.deny_all_waiting_job_apply(job_id)
+            self.notification.send_notification_to_applicant(
+                applicant_id=applicant_id,
+                content=f"Đơn ứng tuyển của bạn cho công việc <strong>{job.name}</strong> đã được chấp thuận",
+                nav_link=f"jobs/{job_id}",
+                avatar=self.user.avatar,
+            )
+            job_denied = self.persistent.deny_all_waiting_job_apply(job_id)
+            self.notification.bulk_insert_notification_applicant(
+                list_applicant_id=[data.applicant_id for data in job_denied],
+                content=f"Đơn ứng tuyển của bạn cho công việc <strong>{job.name}</strong> đã bị từ chối",
+                nav_link=f"jobs/{job_id}",
+                avatar=self.user.avatar,
+            )
             job.status = JobStatus.WORK_IN_PROGRESS
+        if job_apply_status.status == JobPricingStatus.DENY:
+            self.notification.send_notification_to_applicant(
+                applicant_id=applicant_id,
+                content=f"Đơn ứng tuyển của bạn cho công việc <strong>{job.name}</strong> đã bị từ chối",
+                nav_link=f"jobs/{job_id}",
+                avatar=self.user.avatar,
+            )
         self.persistent.commit_change()
 
         return ResponseModel(
