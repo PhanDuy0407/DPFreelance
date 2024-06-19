@@ -4,7 +4,7 @@ from datetime import datetime
 
 from persistent.ApplicantPersistent import ApplicantPersistent
 from persistent.JobPersistent import JobPersistent
-from models.dto.output.ApplicantDTO import ApplicantDTO as OutputApplicant
+from models.dto.output.ApplicantDTO import ApplicantDTO as OutputApplicant, ApplicantStatistic
 from models.dto.input.Applicant import Applicant as InputApplicant
 from models.dto.output.UserInformation import UserInformation
 from models.data.Applicant import Applicant
@@ -72,3 +72,18 @@ class ApplicantController:
             data=applicant.to_dict(),
             detail="Success"
         ), HTTPStatus.CREATED
+    
+    def get_applicant_statistic_by_id(self, applicant_id):
+        if not self.persistent.get_applicant_by_id(applicant_id):
+            return ResponseModel(
+                detail="Applicant not found"
+            ), HTTPStatus.NOT_FOUND
+        statistics = self.persistent.get_applicant_statistics_by_id(applicant_id)
+        return ResponseModel(
+            data=ApplicantStatistic(
+                job_apply=statistics[0],
+                job_done=statistics[1],
+                job_in_progress=statistics[2]
+            ),
+            detail="Success"
+        ), HTTPStatus.OK

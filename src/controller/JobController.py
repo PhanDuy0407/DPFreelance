@@ -1,14 +1,15 @@
 import uuid
 from http import HTTPStatus
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from persistent.JobPersistent import JobPersistent
 from persistent.RecruiterPersistent import RecruiterPersistent
-from models.dto.output.JobDTO import RecruiterJobDTO, JobDTO as OutputJob
-from models.dto.output.RecruiterJobPricing import RecruiterJobPricing
-from models.dto.output.ApplicantJobPricing import ApplicantJobPricing
+from models.dto.output.JobDTO import JobDTO as OutputJob, RecruiterJobDTO as OutputRecruiterJob
+from models.dto.output.RecruiterJob import RecruiterJob
+from models.dto.output.AdminJob import AdminJob
+from models.dto.output.ApplicantJob import ApplicantJob
 from models.dto.input.Job import Job as InputJob
-from models.dto.input.JobApply import JobApply, JobApplyStatus
+from models.dto.input.ApplyStatus import ApplyStatus
 from models.dto.output.RecruiterDTO import RecruiterDTO
 from models.dto.output.ApplicantDTO import ApplicantDTO
 from models.dto.output.UserInformation import UserInformation
@@ -17,7 +18,7 @@ from models.dto.output.AccountDTO import Account
 from models.data.Job import Job
 from models.data.JobApply import JobApply as JobApplyData
 from controller.model.ResponseModel import ListResponseModel, ResponseModel
-from common.constant import JobPricingStatus, JobStatus
+from common.constant import JobApplyStatus, JobStatus
 from controller.NotificationController import NotificationController
 
 class JobController:
@@ -38,9 +39,10 @@ class JobController:
                     information=UserInformation(
                         **poster_account.to_dict(),
                     )
-                )
+                ),
+                number_of_applied=number_of_applied,
             ) 
-            for job, category, poster, poster_account  in job_detail
+            for job, category, poster, poster_account, number_of_applied  in job_detail
         ]
         return ListResponseModel(
             data=result,
@@ -55,7 +57,7 @@ class JobController:
                 detail="Job not found"
             ), HTTPStatus.NOT_FOUND
 
-        job, category, poster, poster_account = job_detail
+        job, category, poster, poster_account, number_of_applied = job_detail
         return ResponseModel(
             data=OutputJob(
                 **job.to_dict(), 
@@ -65,7 +67,8 @@ class JobController:
                     information=UserInformation(
                         **poster_account.to_dict(),
                     )
-                )
+                ),
+                number_of_applied=number_of_applied,
             ),
             detail="Success",
         ).model_dump(), HTTPStatus.OK
@@ -102,10 +105,10 @@ class JobController:
             detail="Success",
         ).model_dump(), HTTPStatus.OK
     
-    def get_job_applicant_applied(self):
-        jobs_applied = self.persistent.get_job_applied_by_applicant_id(self.user.applicant.id)
+    def get_job_applicant_applied(self, params):
+        jobs_applied = self.persistent.get_job_applied_by_applicant_id(self.user.applicant.id, params)
         result = [
-            ApplicantJobPricing(
+            ApplicantJob(
                 **job_applied.to_dict(),
                 job = OutputJob(
                     **job.to_dict(), 
@@ -115,10 +118,11 @@ class JobController:
                         information=UserInformation(
                             **poster_account.to_dict(),
                         )
-                    )
+                    ),
+                    number_of_applied=number_of_applied
                 ),
             ).model_dump()
-            for job_applied, job, category, poster, poster_account  in jobs_applied
+            for job_applied, job, category, poster, poster_account, number_of_applied in jobs_applied
         ]
         return ListResponseModel(
             detail="Success",
@@ -126,7 +130,26 @@ class JobController:
             total=len(result),
         ), HTTPStatus.OK
     
-    def apply_job(self, job_id, job_apply: JobApply):
+    def edit_job(self, job_id, input_job: InputJob):
+        job_detail = self.persistent.get_job_by_id(job_id)
+        if not job_detail:
+            return ResponseModel(
+                detail="Job not found"
+            ), HTTPStatus.NOT_FOUND
+        
+        job, _, _, _, _ = job_detail
+        if job.status != JobStatus.WAITING_FOR_APPROVE:
+            return ResponseModel(
+                detail=f"Không thể cập nhật tin tuyển dụng với trạng thái {job.status}"
+            ), HTTPStatus.CONFLICT
+
+        self.persistent.edit_job(job_id, input_job.model_dump(exclude_none=True))
+        return ResponseModel(
+            detail="Thành công",
+        ), HTTPStatus.OK
+
+    
+    def apply_job(self, job_id):
         job, status_code = self.get_job_by_id(job_id)
         if status_code != HTTPStatus.OK:
             return job, status_code
@@ -135,8 +158,8 @@ class JobController:
                 detail="Job in progress cannot apply"
             ), HTTPStatus.BAD_REQUEST
  
-        exist_pricing = self.persistent.get_job_apply_by_job_id_and_applicant_id(job_id, self.user.applicant.id)
-        if exist_pricing:
+        exist_apply = self.persistent.get_job_apply_by_job_id_and_applicant_id(job_id, self.user.applicant.id)
+        if exist_apply:
             return ResponseModel(
                 detail="Already applied"
             ), HTTPStatus.CONFLICT
@@ -144,10 +167,7 @@ class JobController:
         job_apply_data = JobApplyData(
             applicant_id = self.user.applicant.id,
             job_id = job_id,
-            pricing = job_apply.pricing,
-            experience_description = job_apply.experience_description,
-            plan_description = job_apply.plan_description,
-            status=JobPricingStatus.WAITING_FOR_APPROVE,
+            status=JobApplyStatus.WAITING_FOR_APPROVE,
         )
         self.persistent.add_job_apply(job_apply_data)
         job_name = job["data"]["name"]
@@ -163,44 +183,48 @@ class JobController:
         ), HTTPStatus.CREATED
     
     def revoke_job_apply(self, job_id):
-        exist_pricing = self.persistent.get_job_apply_by_job_id_and_applicant_id(job_id, self.user.applicant.id)
-        if not exist_pricing:
+        exist_job_apply = self.persistent.get_job_apply_by_job_id_and_applicant_id(job_id, self.user.applicant.id)
+        if not exist_job_apply:
             return ResponseModel(
-                detail="Job pricing not found"
+                detail="Job apply not found"
             ), HTTPStatus.NOT_FOUND
-        job_apply, job, _ = exist_pricing
-        if not job_apply.status == JobPricingStatus.ACCEPTED:
+        job_apply, job, _ = exist_job_apply
+        if not job_apply.status == JobApplyStatus.ACCEPTED:
             return ResponseModel(
-                detail=f"Cannot revoke job pricing with status {job_apply.status}"
+                detail=f"Cannot revoke job apply with status {job_apply.status}"
             ), HTTPStatus.CONFLICT
-        job_apply.status = JobPricingStatus.REVOKE
+        job_apply.status = JobApplyStatus.REVOKE
         job.status = JobStatus.OPEN
         self.persistent.commit_change()
         return ResponseModel(
             detail="Success"
         ), HTTPStatus.OK
     
-    def get_all_recruiter_jobs_posted(self):
-        job_detail = self.persistent.get_all_jobs_by_recruiter_id(self.user.recruiter.id)
+    def get_all_recruiter_jobs_posted(self, params):
+        job_detail = self.persistent.get_all_jobs_by_recruiter_id(self.user.recruiter.id, params)
         result = []
-        for job, category in job_detail:
-            job_applied=self.persistent.get_job_applied_success_by_job_id(job.id)
-            if job_applied:
-                job_apply, applicant, account = job_applied
-                job_applied = RecruiterJobPricing(
-                    applicant=ApplicantDTO(
-                        **applicant.to_dict(),
-                        information=UserInformation(**account.to_dict())
-                    ),
-                    **job_apply.to_dict()
-                )
+        for job, category, number_of_applied in job_detail:
+            job_applied = None
+            if params.get("apply_status"):
+                job_applied_detail=self.persistent.get_job_applied_success_by_job_id(job.id, params.get("apply_status"))
+                if job_applied_detail:
+                    job_apply, applicant, account = job_applied_detail
+                    job_applied = RecruiterJob(
+                        applicant=ApplicantDTO(
+                            **applicant.to_dict(),
+                            information=UserInformation(**account.to_dict())
+                        ),
+                        **job_apply.to_dict()
+                    )
+                else:
+                    continue
             result.append(
-                RecruiterJobDTO(
+                OutputRecruiterJob(
                     **job.to_dict(), 
                     category=CategoryDTO(**category.to_dict()),
                     poster=self.user.recruiter,
-                    job_applied=job_applied,
-                    number_of_pricing=len(self.persistent.get_jobs_apply_by_job_id(job.id))
+                    number_of_applied=number_of_applied,
+                    job_applied=job_applied
                 )
             )
         return ListResponseModel(
@@ -209,7 +233,7 @@ class JobController:
             total=len(result)
         ).model_dump(), HTTPStatus.OK
     
-    def get_all_recruiter_jobs_pricing_post(self, job_id):
+    def get_all_recruiter_jobs_apply(self, job_id):
         job_result, status = self.get_job_by_id(job_id)
         if status != HTTPStatus.OK:
             return job_result, status
@@ -220,7 +244,7 @@ class JobController:
             ), HTTPStatus.FORBIDDEN
         jobs_pricing = self.persistent.get_jobs_apply_by_job_id(job_id)
         result = [
-            RecruiterJobPricing(
+            RecruiterJob(
                 applicant=ApplicantDTO(
                     **applicant.to_dict(),
                     information=UserInformation(**account.to_dict())
@@ -236,37 +260,37 @@ class JobController:
         ).model_dump(), HTTPStatus.OK
         
     
-    def change_job_apply_status(self, job_id, applicant_id, job_apply_status: JobApplyStatus):
+    def change_job_apply_status(self, job_id, applicant_id, job_apply_status: ApplyStatus):
         job_apply_info = self.persistent.get_job_apply_by_job_id_and_applicant_id(
             job_id,
             applicant_id
         )
         if not job_apply_info:
             return ResponseModel(
-                detail="Not found pricing"
+                detail="Ứng viên chưa ứng tuyển công việc này"
             ), HTTPStatus.NOT_FOUND
         
         job_apply, job, recruiter = job_apply_info
         if (
             recruiter.id != self.user.recruiter.id 
-            or job_apply_status.status not in [JobPricingStatus.ACCEPTED, JobPricingStatus.DENY]
+            or job_apply_status.status not in [JobApplyStatus.ACCEPTED, JobApplyStatus.DENY]
         ): 
             return ResponseModel(
-                detail="Resource forbidden"
+                detail="Bạn không có quyền thay đổi trạng thái tin tuyển dụng này"
             ), HTTPStatus.FORBIDDEN
         
-        if job_apply_status.status == JobPricingStatus.ACCEPTED:
+        if job_apply_status.status == JobApplyStatus.ACCEPTED:
             if job.status not in [JobStatus.OPEN, JobStatus.REOPEN]:
                 return ResponseModel(
-                    detail=f"Cannot accept pricing with job status {job.status}"
+                    detail=f"Không thể tuyển ứng viên vì tin tuyển dụng có trạng thái {job.status}"
                 ), HTTPStatus.BAD_REQUEST
-        elif job_apply.status == JobPricingStatus.ACCEPTED:
+        elif job_apply.status == JobApplyStatus.ACCEPTED:
             return ResponseModel(
                 detail="Cannot change status from ACCEPTED to DENY"
             ), HTTPStatus.BAD_REQUEST
         
         job_apply.status = job_apply_status.status
-        if job_apply_status.status == JobPricingStatus.ACCEPTED:
+        if job_apply_status.status == JobApplyStatus.ACCEPTED:
             job_apply.applied_at = datetime.now()
             self.notification.send_notification_to_applicant(
                 applicant_id=applicant_id,
@@ -281,8 +305,8 @@ class JobController:
                 nav_link=f"jobs/{job_id}",
                 avatar=self.user.avatar,
             )
-            job.status = JobStatus.WORK_IN_PROGRESS
-        if job_apply_status.status == JobPricingStatus.DENY:
+            job.status = JobStatus.DONE
+        if job_apply_status.status == JobApplyStatus.DENY:
             self.notification.send_notification_to_applicant(
                 applicant_id=applicant_id,
                 content=f"Đơn ứng tuyển của bạn cho công việc <strong>{job.name}</strong> đã bị từ chối",
@@ -295,3 +319,34 @@ class JobController:
             data=job_apply.to_dict(),
             detail="Success"
         ).model_dump(), HTTPStatus.OK
+    
+    def get_all_job_applies_success(self, params):
+        jobs_applied = self.persistent.get_all_job_applies_success(params)
+        result = [
+            AdminJob(
+                **job_applied.to_dict(),
+                job = OutputJob(
+                    **job.to_dict(), 
+                    category=CategoryDTO(**category.to_dict()),
+                    poster=RecruiterDTO(
+                        **poster.to_dict(),
+                        information=UserInformation(
+                            **poster_account.to_dict(),
+                        )
+                    ),
+                    number_of_applied=number_of_applied
+                ),
+                applicant=ApplicantDTO(
+                    **applicant.to_dict(),
+                    information=UserInformation(
+                        **applicant_account.to_dict(),
+                    )
+                )
+            ).model_dump()
+            for job_applied, job, category, applicant, applicant_account, poster, poster_account, number_of_applied in jobs_applied
+        ]
+        return ListResponseModel(
+            detail="Success",
+            data = result,
+            total=len(result),
+        ), HTTPStatus.OK

@@ -3,7 +3,7 @@ from typing import Optional
 from pydantic import BaseModel
 from models.dto.output.RecruiterDTO import RecruiterDTO
 from models.dto.output.CategoryDTO import CategoryDTO
-from models.dto.output.RecruiterJobPricing import RecruiterJobPricing
+from models.dto.output.RecruiterJob import RecruiterJob
 
 class JobDTO(BaseModel):
     id: str
@@ -20,7 +20,7 @@ class JobDTO(BaseModel):
     status: str
     end_date: datetime
     created_at: datetime
+    number_of_applied: int
 
 class RecruiterJobDTO(JobDTO):
-    job_applied: Optional[RecruiterJobPricing] = None
-    number_of_pricing: int
+    job_applied: Optional[RecruiterJob] = None

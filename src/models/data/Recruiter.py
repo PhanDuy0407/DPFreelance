@@ -12,6 +12,8 @@ class Recruiter(Base, BaseModel):
     phone = Column(String, unique=True)
     city = Column(String)
     address = Column(String)
+    company_name = Column(String)
+    cccd = Column(String)
     free_post_attempt = Column(Integer)
     remain_post_attempt = Column(Integer)
     created_at = Column(DateTime)

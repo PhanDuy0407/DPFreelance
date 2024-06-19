@@ -9,6 +9,7 @@ class Applicant(Base, BaseModel):
 
     id = Column(String, primary_key=True)
     account_id = Column(String, primary_key=True)
+    title = Column(String)
     bio = Column(String)
     skills = Column(JSON)
     phone = Column(String, unique=True)

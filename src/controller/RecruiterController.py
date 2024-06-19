@@ -4,7 +4,7 @@ from datetime import datetime
 
 from persistent.RecruiterPersistent import RecruiterPersistent
 from persistent.JobPersistent import JobPersistent
-from models.dto.output.RecruiterDTO import RecruiterDTO
+from models.dto.output.RecruiterDTO import RecruiterDTO, RecruiterStatistic
 from models.dto.input.Recruiter import Recruiter as InputRecruiter
 from models.dto.output.UserInformation import UserInformation
 from models.dto.output.AccountDTO import Account
@@ -61,9 +61,11 @@ class RecruiterController:
         recruiter = Recruiter(
             id = uuid4(),
             account_id = self.user.id,
+            company_name = recruiter_info.company_name,
             city = recruiter_info.city,
             address = recruiter_info.address,
             phone = recruiter_info.phone,
+            cccd = recruiter_info.cccd,
             free_post_attempt = 1,
             remain_post_attempt = 0,
             created_at = datetime.now(),
@@ -75,3 +77,18 @@ class RecruiterController:
             data=recruiter.to_dict(),
             detail="Success"
         ), HTTPStatus.CREATED
+    
+    def get_recruiter_statistic_by_id(self, recruiter_id):
+        if not self.persistent.get_recruiter_by_id(recruiter_id):
+            return ResponseModel(
+                detail="Recruiter not found"
+            ), HTTPStatus.NOT_FOUND
+        statistics = self.persistent.get_recruiter_statistic_by_id(recruiter_id)
+        return ResponseModel(
+            data=RecruiterStatistic(
+                job_posted=statistics[0],
+                job_done=statistics[1],
+                job_in_progress=statistics[2]
+            ),
+            detail="Success"
+        ), HTTPStatus.OK

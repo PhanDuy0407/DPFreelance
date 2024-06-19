@@ -10,9 +10,11 @@ class JobApply(Base, BaseModel):
 
     applicant_id = Column(String, primary_key=True)
     job_id = Column(String, primary_key=True)
-    pricing = Column(Integer)
-    experience_description = Column(String)
-    plan_description = Column(String)
     status = Column(String)
     created_at = Column(DateTime, default=datetime.now)
     applied_at = Column(DateTime)
+    done_at = Column(DateTime)
+
+    @staticmethod
+    def filter_fields():
+        return ["applied_at", "created_at", "status"]
