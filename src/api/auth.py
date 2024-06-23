@@ -1,7 +1,7 @@
 from common.database_connection import get_db
 from common.helper import get_current_user
 from fastapi import APIRouter, Depends, Response
-from models.dto.input.Account import Account, RegisterAccount
+from models.dto.input.Account import Account, RegisterAccount, ResetPassword
 from controller.AuthenticationController import AuthenticationController
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
@@ -11,6 +11,13 @@ router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 async def login(account: Account, response_model: Response, session = Depends(get_db)):
     controller = AuthenticationController(session)
     result, status_code = controller.login(account)
+    response_model.status_code = status_code
+    return result
+
+@router.put("/reset_password")
+async def login(reset_password: ResetPassword, response_model: Response, user =  Depends(get_current_user()), session = Depends(get_db)):
+    controller = AuthenticationController(session)
+    result, status_code = controller.reset_password(user, reset_password)
     response_model.status_code = status_code
     return result
 

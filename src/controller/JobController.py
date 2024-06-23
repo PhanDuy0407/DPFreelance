@@ -46,7 +46,7 @@ class JobController:
         ]
         return ListResponseModel(
             data=result,
-            detail="Success",
+            detail="Thành công",
             total=len(result)
         ).model_dump(), HTTPStatus.OK
     
@@ -70,7 +70,7 @@ class JobController:
                 ),
                 number_of_applied=number_of_applied,
             ),
-            detail="Success",
+            detail="Thành công",
         ).model_dump(), HTTPStatus.OK
     
     def create_job(self, job: InputJob):
@@ -102,7 +102,7 @@ class JobController:
             self.recruiter_persistent.reduce_remain_post_attempt(recruiter_id=self.user.recruiter.id)
         return ResponseModel(
             data=job_record.to_dict(), 
-            detail="Success",
+            detail="Thành công",
         ).model_dump(), HTTPStatus.OK
     
     def get_job_applicant_applied(self, params):
@@ -125,7 +125,7 @@ class JobController:
             for job_applied, job, category, poster, poster_account, number_of_applied in jobs_applied
         ]
         return ListResponseModel(
-            detail="Success",
+            detail="Thành công",
             data = result,
             total=len(result),
         ), HTTPStatus.OK
@@ -179,7 +179,7 @@ class JobController:
         )
         return ResponseModel(
             data=job_apply_data.to_dict(),
-            detail="Success"
+            detail="Thành công"
         ), HTTPStatus.CREATED
     
     def revoke_job_apply(self, job_id):
@@ -197,7 +197,7 @@ class JobController:
         job.status = JobStatus.OPEN
         self.persistent.commit_change()
         return ResponseModel(
-            detail="Success"
+            detail="Thành công"
         ), HTTPStatus.OK
     
     def get_all_recruiter_jobs_posted(self, params):
@@ -229,7 +229,7 @@ class JobController:
             )
         return ListResponseModel(
             data=result,
-            detail="Success",
+            detail="Thành công",
             total=len(result)
         ).model_dump(), HTTPStatus.OK
     
@@ -255,7 +255,7 @@ class JobController:
         ]
         return ListResponseModel(
             data=result,
-            detail="Success",
+            detail="Thành công",
             total=len(result)
         ).model_dump(), HTTPStatus.OK
         
@@ -317,7 +317,7 @@ class JobController:
 
         return ResponseModel(
             data=job_apply.to_dict(),
-            detail="Success"
+            detail="Thành công"
         ).model_dump(), HTTPStatus.OK
     
     def get_all_job_applies_success(self, params):
@@ -346,7 +346,35 @@ class JobController:
             for job_applied, job, category, applicant, applicant_account, poster, poster_account, number_of_applied in jobs_applied
         ]
         return ListResponseModel(
-            detail="Success",
+            detail="Thành công",
             data = result,
             total=len(result),
         ), HTTPStatus.OK
+    
+    def recruiter_mark_done_job(self, job_id):
+        job = self.persistent.get_job_by_id(job_id)
+        if not job:
+            return ResponseModel(
+                detail="Không tìm thấy công việc"
+            ), HTTPStatus.NOT_FOUND
+
+        job_applied_detail=self.persistent.get_job_applied_success_by_job_id(job_id, JobApplyStatus.ACCEPTED)
+        if not job_applied_detail:
+            return ResponseModel(
+                detail="Công việc chưa được thực hiện"
+            ), HTTPStatus.CONFLICT
+        job_apply, applicant, _ = job_applied_detail
+        job = job[0]
+
+        job_apply.status = JobApplyStatus.DONE
+        self.persistent.commit_change()
+        self.notification.send_notification_to_applicant(
+            applicant_id=applicant.id,
+            content=f"Công việc <strong>{job.name}</strong> của bạn đã được đánh giá là: Hoàn thành",
+            nav_link=f"applicants/jobs",
+            avatar=self.user.avatar,
+        )
+
+        return ResponseModel(
+            detail="Thành công",
+        ).model_dump(), HTTPStatus.OK

@@ -31,7 +31,7 @@ class NotificationController:
         return json.loads(json.dumps(
             ListResponseModel(
                 data=result,
-                detail="Success",
+                detail="Thành công",
                 total=len(result)
             ).model_dump(),
             default=custom_encoder,
