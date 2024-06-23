@@ -9,3 +9,7 @@ class RegisterAccount(Account):
     fname : Optional[str]
     lname : Optional[str]
     email: str
+
+class ResetPassword(BaseModel):
+    old_password: str
+    new_password: str

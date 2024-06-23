@@ -18,6 +18,6 @@ class CategoryController:
         ]
         return ListResponseModel(
             data=result,
-            detail="Success",
+            detail="Thành công",
             total=len(result)
         ).model_dump(), HTTPStatus.OK

@@ -30,7 +30,7 @@ class RecruiterController:
         ]
         return ListResponseModel(
             data=result,
-            detail="Success",
+            detail="Thành công",
             total=len(result)
         ).model_dump(), HTTPStatus.OK
     
@@ -49,7 +49,7 @@ class RecruiterController:
                     **account.to_dict()
                 )
             ),
-            detail="Success"
+            detail="Thành công"
         ).model_dump(), HTTPStatus.OK
     
     def register(self, recruiter_info: InputRecruiter):
@@ -75,7 +75,7 @@ class RecruiterController:
         self.persistent.add_recruiter(recruiter)
         return ResponseModel(
             data=recruiter.to_dict(),
-            detail="Success"
+            detail="Thành công"
         ), HTTPStatus.CREATED
     
     def get_recruiter_statistic_by_id(self, recruiter_id):
@@ -90,5 +90,5 @@ class RecruiterController:
                 job_done=statistics[1],
                 job_in_progress=statistics[2]
             ),
-            detail="Success"
+            detail="Thành công"
         ), HTTPStatus.OK

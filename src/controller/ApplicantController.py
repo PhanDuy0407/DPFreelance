@@ -27,7 +27,7 @@ class ApplicantController:
         ]
         return ListResponseModel(
             data=result,
-            detail="Success",
+            detail="Thành công",
             total=len(result)
         ).model_dump(), HTTPStatus.OK
     
@@ -44,7 +44,7 @@ class ApplicantController:
                 **applicant.to_dict(),
                 information=UserInformation(**account.to_dict())
             ),
-            detail="Success",
+            detail="Thành công",
         ).model_dump(), HTTPStatus.OK
     
     def register(self, applicant_info: InputApplicant):
@@ -70,7 +70,7 @@ class ApplicantController:
         self.persistent.add_applicant(applicant)
         return ResponseModel(
             data=applicant.to_dict(),
-            detail="Success"
+            detail="Thành công"
         ), HTTPStatus.CREATED
     
     def get_applicant_statistic_by_id(self, applicant_id):
@@ -85,5 +85,5 @@ class ApplicantController:
                 job_done=statistics[1],
                 job_in_progress=statistics[2]
             ),
-            detail="Success"
+            detail="Thành công"
         ), HTTPStatus.OK

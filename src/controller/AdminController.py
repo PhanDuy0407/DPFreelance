@@ -85,7 +85,7 @@ class AdminController:
                 ),
                 number_of_applied=number_of_applied
             ),
-            detail="Success",
+            detail="Thành công",
         ).model_dump(), HTTPStatus.NO_CONTENT
 
     def delete_job(self, job_id):
@@ -102,7 +102,7 @@ class AdminController:
             ), HTTPStatus.BAD_REQUEST
         self.job_persistent.delete_job(job)
         return ResponseModel(
-            detail="Success",
+            detail="Thành công",
         ).model_dump(), HTTPStatus.NO_CONTENT
     
     def list_accounts(self):
@@ -119,20 +119,20 @@ class AdminController:
             )
         return ListResponseModel(
             data=result,
-            detail="Success",
+            detail="Thành công",
             total=len(result)
         ).model_dump(), HTTPStatus.OK
     
     def disable_account(self, account_id):
         self.account_persistent.toggle_account(account_id, 0)
         return ResponseModel(
-            detail="Success"
+            detail="Thành công"
         ), HTTPStatus.OK
     
     def enable_account(self, account_id):
         self.account_persistent.toggle_account(account_id, 1)
         return ResponseModel(
-            detail="Success"
+            detail="Thành công"
         ), HTTPStatus.OK
     
     def list_recruiters(self):
@@ -153,7 +153,7 @@ class AdminController:
             )
         return ListResponseModel(
             data=result,
-            detail="Success",
+            detail="Thành công",
             total=len(result)
         ).model_dump(), HTTPStatus.OK
     
@@ -175,7 +175,7 @@ class AdminController:
             )
         return ListResponseModel(
             data=result,
-            detail="Success",
+            detail="Thành công",
             total=len(result)
         ).model_dump(), HTTPStatus.OK
     
@@ -189,5 +189,5 @@ class AdminController:
         recruiter.remain_post_attempt = int(body.get("attempt")) if body.get("attempt") else recruiter.remain_post_attempt
         self.recruiter_persistent.commit_change()
         return ResponseModel(
-            detail="Success"
+            detail="Thành công"
         ), HTTPStatus.OK

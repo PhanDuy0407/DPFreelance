@@ -3,7 +3,7 @@ from http import HTTPStatus
 from datetime import datetime, timedelta
 
 from persistent.AccountPersistent import AccountPersistent
-from models.dto.input.Account import Account as LoginAccount
+from models.dto.input.Account import Account as LoginAccount, ResetPassword
 from models.dto.input.Account import RegisterAccount
 from models.data.Account import Account
 from controller.model.ResponseModel import ResponseModel
@@ -39,8 +39,21 @@ class AuthenticationController:
         )
         return ResponseModel(
             data={"access_token": access_token},
-            detail="Success",
+            detail="Thành công",
         ).model_dump(), HTTPStatus.OK
+    
+    def reset_password(self, user, reset_password: ResetPassword):
+        user_db = self.persistent.get_account_by_username(user.username)
+        if not self.__verify_password(reset_password.old_password, user_db.password):
+            return ResponseModel(
+                detail="Invalid credentials",
+            ).model_dump(), HTTPStatus.UNAUTHORIZED
+        user_db.password = pwd_context.hash(reset_password.new_password)
+        self.persistent.commit_change()
+        return self.login(account=LoginAccount(
+            username=user.username,
+            password=reset_password.new_password,
+        ))
     
     def login_admin(self, account: LoginAccount) -> ResponseModel:
         user: Account = self.persistent.get_account_by_username(account.username)
@@ -64,7 +77,7 @@ class AuthenticationController:
         )
         return ResponseModel(
             data={"access_token": access_token},
-            detail="Success",
+            detail="Thành công",
         ).model_dump(), HTTPStatus.OK
     
     def register(self, account: RegisterAccount):
@@ -85,7 +98,7 @@ class AuthenticationController:
         )
         return ResponseModel(
             data={"access_token": access_token},
-            detail="Success",
+            detail="Thành công",
         ).model_dump(), HTTPStatus.OK
     
     def __create_access_token(self, data: dict, expires_delta: timedelta):

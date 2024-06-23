@@ -46,6 +46,13 @@ async def change_job_apply_status(job_id: UUID, applicant_id: UUID, job_apply_st
     response_model.status_code = status_code
     return result
 
+@router.put("/jobs/{job_id}/mark_done")
+async def mark_done(job_id: UUID, response_model: Response, user = Depends(get_current_user()), session = Depends(get_db)):
+    controller = JobController(user, session)
+    result, status_code = controller.recruiter_mark_done_job(str(job_id))
+    response_model.status_code = status_code
+    return result
+
 @router.get("/{recruiter_id}")
 async def detail(recruiter_id: UUID, response_model: Response, user = Depends(get_current_user()), session = Depends(get_db)):
     controller = RecruiterController(user, session)
