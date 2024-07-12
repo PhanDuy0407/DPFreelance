@@ -31,6 +31,11 @@ class ApplicantPersistent(BasePersistent):
         self.session.commit()
         return applicant
     
+    def get_applicant_by_phone(self, phone):
+        return self.session.query(Applicant).filter(
+            Applicant.phone == phone
+        ).first()
+    
     def get_applicant_statistics_by_id(self, applicant_id):
         return self.session.query(
             func.count(JobApply.job_id).label("job_apply"),

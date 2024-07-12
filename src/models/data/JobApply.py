@@ -17,4 +17,4 @@ class JobApply(Base, BaseModel):
 
     @staticmethod
     def filter_fields():
-        return ["applied_at", "created_at", "status"]
+        return ["applied_at", "created_at", "done_at", "status"]

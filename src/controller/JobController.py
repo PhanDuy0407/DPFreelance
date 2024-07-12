@@ -4,6 +4,7 @@ from datetime import datetime
 
 from persistent.JobPersistent import JobPersistent
 from persistent.RecruiterPersistent import RecruiterPersistent
+from persistent.CategoryPersistent import CategoryPersistent
 from models.dto.output.JobDTO import JobDTO as OutputJob, RecruiterJobDTO as OutputRecruiterJob
 from models.dto.output.RecruiterJob import RecruiterJob
 from models.dto.output.AdminJob import AdminJob
@@ -26,6 +27,7 @@ class JobController:
         self.user = user
         self.persistent = JobPersistent(session)
         self.recruiter_persistent = RecruiterPersistent(session)
+        self.category_persistent = CategoryPersistent(session)
         self.notification = NotificationController(user, session)
 
     def get_all_jobs(self, params = {}):
@@ -76,8 +78,14 @@ class JobController:
     def create_job(self, job: InputJob):
         if self.user.recruiter.free_post_attempt <= 0 and self.user.recruiter.remain_post_attempt <= 0:
             return ResponseModel( 
-                detail="No more post job attemps",
-            ).model_dump(), HTTPStatus.CONFLICT
+                detail="Không còn lượt đăng",
+            ).model_dump(), HTTPStatus.UNPROCESSABLE_ENTITY
+        
+        category = self.category_persistent.get_category_by_id(job.category_id)
+        if not category:
+            return ResponseModel( 
+                detail="Không tìm thấy lĩnh vực",
+            ).model_dump(), HTTPStatus.UNPROCESSABLE_ENTITY
 
         job_record = Job(
             id=str(uuid.uuid4()),
@@ -284,9 +292,9 @@ class JobController:
                 return ResponseModel(
                     detail=f"Không thể tuyển ứng viên vì tin tuyển dụng có trạng thái {job.status}"
                 ), HTTPStatus.BAD_REQUEST
-        elif job_apply.status == JobApplyStatus.ACCEPTED:
+        elif job_apply.status in [JobApplyStatus.ACCEPTED, JobApplyStatus.DONE]:
             return ResponseModel(
-                detail="Cannot change status from ACCEPTED to DENY"
+                detail="Không thể từ chối người ứng tuyển đã được chấp nhận"
             ), HTTPStatus.BAD_REQUEST
         
         job_apply.status = job_apply_status.status
@@ -367,6 +375,7 @@ class JobController:
         job = job[0]
 
         job_apply.status = JobApplyStatus.DONE
+        job_apply.done_at = datetime.now()
         self.persistent.commit_change()
         self.notification.send_notification_to_applicant(
             applicant_id=applicant.id,

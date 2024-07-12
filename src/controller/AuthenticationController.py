@@ -1,6 +1,9 @@
 import jwt
+import uuid
+import boto3
 from http import HTTPStatus
 from datetime import datetime, timedelta
+from fastapi import File, UploadFile
 
 from persistent.AccountPersistent import AccountPersistent
 from models.dto.input.Account import Account as LoginAccount, ResetPassword
@@ -92,6 +95,7 @@ class AuthenticationController:
             email=account.email,
             fname=account.fname,
             lname=account.lname,
+            avatar=account.avatar,
         )
         access_token = self.__create_access_token(
             data={"sub": account_db.username}, expires_delta=timedelta(seconds=config.getint("access_token_expire_time"))
@@ -110,3 +114,29 @@ class AuthenticationController:
     
     def __verify_password(self, plain_password, hashed_password):
         return pwd_context.verify(plain_password, hashed_password)
+    
+    def upload_avatar(self, avatar: UploadFile = File(...)):
+        s3_client = boto3.client(
+            's3',
+            aws_access_key_id="YG9UCBE539XCWB5XEMDA",
+            aws_secret_access_key="UpNjEZ7kBhY5RZukLHbxZ9uQ9jW7vdVj1NRaF2C4",
+            endpoint_url="https://s3-hfx03.fptcloud.com",
+        )
+        file_id = uuid.uuid4()
+        try:
+            file_extension = avatar.filename.split('.')[-1]
+            file_key = f"{file_id}.{file_extension}"
+
+            # Upload file to S3
+            s3_client.upload_fileobj(avatar.file, "duyp10test-dont-delete", file_key)
+
+            file_url = f"https://duyp10test-dont-delete.s3-hfx03.fptcloud.com/{file_key}"
+            return ResponseModel(
+                data={"url": file_url},
+                detail="Thành công",
+            ).model_dump(), HTTPStatus.OK
+
+        except Exception as e:
+            return ResponseModel(
+                detail=str(e),
+            ).model_dump(), HTTPStatus.INTERNAL_SERVER_ERROR

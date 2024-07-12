@@ -23,14 +23,15 @@ class AccountPersistent(BasePersistent):
             or_(Account.username == username, Account.email == email)
         ).first() is not None
     
-    def create_account(self, username, password, email = None, fname = None, lname = None):
+    def create_account(self, username, password, email = None, fname = None, lname = None, avatar = None):
         account = Account(
             id=str(uuid4()),
             username=username,
             password=password,
             email=email,
             fname=fname,
-            lname=lname
+            lname=lname,
+            avatar=avatar,
         )
         self.session.add(account)
         self.session.commit()

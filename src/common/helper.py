@@ -10,6 +10,7 @@ from common.database_connection import get_db
 from common.constant import RECRUITER_ROLE, ADMIN_ROLE, APPLICANT_ROLE
 from models.dto.output.AccountDTO import Account, ApplicantDTO, RecruiterInfoDTO
 from models.dto.output.UserInformation import UserInformation
+from sqlalchemy import DateTime, func
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
@@ -110,9 +111,22 @@ def get_filters(params, Model):
             field_name, op = key.split('__')
             if field_name in Model.filter_fields() and op in operators:
                 column = getattr(Model, field_name)
+                column_type = column.property.columns[0].type
+
+                # Handle datetime conversion if the field is a datetime column
+                if isinstance(column_type, DateTime):
+                    try:
+                        value = datetime.strptime(value, "%Y-%m-%d")
+                    except ValueError:
+                        raise HTTPException(status_code=400, detail=f"Invalid date format for {field_name}: {value}")
                 if op == 'eq':
-                    filter_list = value.split(",")
-                    filters.append(column.in_(filter_list))
+                    if field_name == "name":
+                        filters.append(column.like(f"%{value}%"))
+                    elif isinstance(column_type, DateTime):
+                        filters.append(func.date(column) == value.date())
+                    else:
+                        filter_list = value.split(",")
+                        filters.append(column.in_(filter_list))
                 elif op == 'gt':
                     filters.append(column > value)
                 elif op == 'lt':
@@ -121,8 +135,6 @@ def get_filters(params, Model):
                     filters.append(column >= value)
                 elif op == 'le':
                     filters.append(column <= value)
-            else:
-                raise HTTPException(status_code=400, detail=f"Invalid filter key: {key}")
     return filters
 
 def parse_order_by(params, Model):

@@ -66,3 +66,13 @@ class RecruiterPersistent(BasePersistent):
         ).first()
 
         return job_posted, job_done, job_in_progress
+    
+    def get_recruiter_by_phone(self, phone):
+        return self.session.query(Recruiter).filter(
+            Recruiter.phone == phone
+        ).first()
+    
+    def get_recruiter_by_cccd(self, cccd):
+        return self.session.query(Recruiter).filter(
+            Recruiter.cccd == cccd
+        ).first()
