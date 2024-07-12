@@ -55,7 +55,18 @@ class RecruiterController:
     def register(self, recruiter_info: InputRecruiter):
         if self.user.recruiter:
             return ResponseModel(
-                detail="Account already register as an Recruiter"
+                detail="Tài khoản đã là người tìm việc"
+            ), HTTPStatus.CONFLICT
+        
+        exist = self.persistent.get_recruiter_by_phone(recruiter_info.phone)
+        if exist:
+            return ResponseModel(
+                detail="Số điện thoại đã được sử dụng"
+            ), HTTPStatus.CONFLICT
+        exist = self.persistent.get_recruiter_by_cccd(recruiter_info.cccd)
+        if exist:
+            return ResponseModel(
+                detail="Số căn cước đã được sử dụng"
             ), HTTPStatus.CONFLICT
         
         recruiter = Recruiter(

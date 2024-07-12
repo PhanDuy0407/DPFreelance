@@ -50,7 +50,13 @@ class ApplicantController:
     def register(self, applicant_info: InputApplicant):
         if self.user.applicant:
             return ResponseModel(
-                detail="Account already register as an Applicant"
+                detail="Tài khản đã là người tìm việc"
+            ), HTTPStatus.CONFLICT
+        
+        exist = self.persistent.get_applicant_by_phone(applicant_info.phone)
+        if exist:
+            return ResponseModel(
+                detail="Số điện thoại đã được sử dụng"
             ), HTTPStatus.CONFLICT
         
         applicant = Applicant(

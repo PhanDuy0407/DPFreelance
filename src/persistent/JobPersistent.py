@@ -180,6 +180,9 @@ class JobPersistent(BasePersistent):
         filters = get_filters(params, JobApply)
         if filters:
             query = query.filter(and_(*filters))
+        name_param = params.get("name__eq")
+        if name_param:
+            query = query.filter(Job.name.like(f"%{name_param}%"))
 
         job_applies = query.order_by(JobApply.created_at.desc()).all()
         result = []
